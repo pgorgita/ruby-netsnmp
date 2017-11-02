@@ -4,6 +4,7 @@ require "openssl"
 require "io/wait"
 require "securerandom"
 require "ipaddr"
+require "timeout"
 
 
 # core structures
