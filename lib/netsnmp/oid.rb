@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 module NETSNMP
+  OIDREGEX = /^[\d\.]*$/
   # Abstracts the OID structure
   #
   module OID
-    OIDREGEX = /^[\d\.]*$/
 
     extend self
 

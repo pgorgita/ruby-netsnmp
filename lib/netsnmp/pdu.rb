@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require 'forwardable'
 module NETSNMP
+  MAXREQUESTID = 2147483647
   # Abstracts the PDU base structure into a ruby object. It gives access to its varbinds.
   #
   class PDU
-    MAXREQUESTID=2147483647
     class << self
 
       def decode(der)

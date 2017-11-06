@@ -3,8 +3,9 @@ module NETSNMP
   # Factory for the SNMP v3 Message format
   module Message
     extend self
-    AUTHNONE               = OpenSSL::ASN1::OctetString.new("\x00" * 12)
-    PRIVNONE               = OpenSSL::ASN1::OctetString.new("")
+
+    AUTHNONE           = OpenSSL::ASN1::OctetString.new("\x00" * 12)
+    PRIVNONE           = OpenSSL::ASN1::OctetString.new("")
     MSG_MAX_SIZE       = OpenSSL::ASN1::Integer.new(65507)
     MSG_SECURITY_MODEL = OpenSSL::ASN1::Integer.new(3)           # usmSecurityModel
     MSG_VERSION        = OpenSSL::ASN1::Integer.new(3)
