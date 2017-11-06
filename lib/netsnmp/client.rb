@@ -8,7 +8,7 @@ module NETSNMP
   #
   #
   class Client
-    RETRIES = 5
+    RETRIES = 1
 
     # @param [Hash] options the options to needed to enable the SNMP client.
     # @option options [String, Integer, nil] :version the version of the protocol (defaults to 3).
