@@ -49,7 +49,7 @@ module NETSNMP
         @transport = proxy 
       else
         host, port = options.values_at(:host, :port)
-        raise "you must provide an hostname/ip under :host" unless host
+        raise Error, "you must provide an hostname/ip under :host" unless host
         port ||= 161 # default snmp port
         @transport = Transport.new(host, port.to_i, timeout: options.fetch(:timeout, TIMEOUT))
       end
@@ -59,7 +59,7 @@ module NETSNMP
         when /v?2c?/ then 1 
         when /v?3/ then 3
         else
-          raise "unsupported snmp version (#{@version})"
+          raise Error, "unsupported snmp version (#{@version})"
       end
     end
 

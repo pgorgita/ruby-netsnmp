@@ -14,7 +14,7 @@ module NETSNMP
         when OpenSSL::ASN1::ASN1Data
           der
         else
-          raise "#{der}: unexpected data"
+          raise Error, "#{der}: unexpected data"
         end
 
         *headers, request = asn_tree.value
