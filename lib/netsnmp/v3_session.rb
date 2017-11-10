@@ -14,14 +14,8 @@ module NETSNMP
     #
     # @return [NETSNMP::ScopedPDU] a pdu
     def build_pdu(type, *vars)
-      engine_id = security_parameters.engine_id
-      pdu = ScopedPDU.build(type, headers: [engine_id, @context], varbinds: vars)
-    end
-
-    # @see {NETSNMP::Session#send}
-    def send(*)
-      pdu, _ = super
-      pdu
+      probe_for_engine unless defined?(@engine_time_gap)
+      ScopedPDU.build(type, headers: [@security_parameters.engine_id, @context], varbinds: vars)
     end
 
     private
@@ -42,15 +36,8 @@ module NETSNMP
                                                       priv_protocol:  options[:priv_protocol],
                                                       auth_password:  options[:auth_password],
                                                       priv_password:  options[:priv_password])
-  
-      end
-    end
 
-    def security_parameters
-      if @security_parameters.engine_id.empty?
-        @security_parameters.engine_id = probe_for_engine
       end
-      @security_parameters
     end
 
     # sends a probe snmp v3 request, to get the additional info with which to handle the security aspect
@@ -63,18 +50,22 @@ module NETSNMP
 
       encoded_response_pdu = @transport.send(encoded_report_pdu)
 
-      _, engine_id, @engine_boots, @engine_time = decode(encoded_response_pdu, security_parameters: report_sec_params)
-      engine_id
+      engine_id, @engine_boots, engine_time, *_ = Message.map_stream(encoded_response_pdu)
+      @security_parameters.engine_id = engine_id
+      # sets the interval between sytem tyme and engine_time
+      @engine_time_gap = Time.now.to_i - engine_time
     end
 
     def encode(pdu)
       Message.encode(pdu, security_parameters: @security_parameters, 
                           engine_boots: @engine_boots,
-                          engine_time: @engine_time)
+                          engine_time: (Time.now.to_i - @engine_time_gap))
     end
 
     def decode(stream, security_parameters: @security_parameters)
       Message.decode(stream, security_parameters: security_parameters)
     end
+
   end
+
 end
