@@ -1,9 +1,14 @@
-require 'simplecov' if ENV["COVERAGE"]
+require 'simplecov'
 require 'coveralls'
+SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter[
+    SimpleCov::Formatter::HTMLFormatter,
+    Coveralls::SimpleCov::Formatter
+]
 Coveralls.wear!
 
-SimpleCov.start do   
+SimpleCov.start do
   minimum_coverage 85
+  add_filter "/ruby/"
   add_filter ".bundle"
   add_filter "/spec/"
 end if defined?(SimpleCov)

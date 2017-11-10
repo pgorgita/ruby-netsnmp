@@ -16,20 +16,24 @@ RSpec.shared_examples "an snmp client" do
     end
   end
 
+  describe "#get(multi_varbind)" do
+    let(:value) { subject.get(oid: multi_get_oid) }
+    it "fetches the varbinds for a given oid" do
+      expect(value).to eq(multi_get_result)
+    end
+  end
+
   describe "#get_next" do
-    let(:varbind) { subject.get_next(oid: get_oid) }
+    let(:value) { subject.get_next(oid: get_oid) }
     it "fetches the varbinds for the next oid" do
-      oid, value = varbind
-      expect(value).to start_with(next_result)
-      expect(oid).to eq(next_oid)
+      expect(value).to eq(next_result)
     end
   end
 
   describe "#walk" do
     let(:value) { subject.walk(oid: walk_oid) }
     it "fetches the varbinds for the next oid" do
-      values = value.map {|oid, val| "#{oid}: #{val}" }.join("\n") << "\n" 
-      expect(values).to eq(walk_result)
+      expect(value).to eq(walk_result)
     end
   end
 
