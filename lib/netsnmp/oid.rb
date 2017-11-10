@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 module NETSNMP
-  OIDREGEX = /^[\d\.]*$/
   # Abstracts the OID structure
   #
   module OID
-
+    OIDREGEX = /^[\.]*\d(\.\d+)+$/
     extend self
 
     def build(o)
       case o
-      when OID then o
-      when Array
-        o.join('.')
-      when OIDREGEX
-        o = o[1..-1] if o.start_with?('.')
-        o
-      # TODO: MIB to OID
-      else raise Error, "can't convert #{o} to OID"
+        when Array
+          o.join('.')
+        when OIDREGEX
+          o = o[1..-1] if o.start_with?('.')
+          o
+        when OpenSSL::ASN1::ObjectId
+          o.value
+        else
+          raise Error, "can't convert #{o} to OID"
       end
     end
 
