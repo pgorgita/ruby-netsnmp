@@ -99,33 +99,22 @@ module NETSNMP
     # @param [Hash] options additional request varbind options
     # @option options [Object] :value the value for the oid
     def add_varbind(oid: , **options)
-      @varbinds << Varbind.new(oid, **options)
+      Array(oid).each do |single_oid|
+        @varbinds << Varbind.new(single_oid, **options)
+      end
     end
     alias_method :<<, :add_varbind
 
-
-    def to_asn
-      request_id_asn = OpenSSL::ASN1::Integer.new( @request_id )
-      error_asn = OpenSSL::ASN1::Integer.new( @error_status )
-      error_index_asn = OpenSSL::ASN1::Integer.new( @error_index )
-
-      varbind_asns = OpenSSL::ASN1::Sequence.new( @varbinds.map(&:to_asn) )
-
-      request_asn = OpenSSL::ASN1::ASN1Data.new( [request_id_asn,
-                                                  error_asn, error_index_asn,
-                                                  varbind_asns], @type,
-                                                  :CONTEXT_SPECIFIC )
-
-      OpenSSL::ASN1::Sequence.new( [ *encode_headers_asn, request_asn ] )
+    def add_varbinds(varbinds)
+      ## adds varbind with pdu error if exists
+      @varbinds << Varbind.new([:pdu, :error], value: @error) if @error
+      varbinds.each{|v| add_varbind(v) }
     end
-
-    private
 
     def encode_headers_asn
       [ OpenSSL::ASN1::Integer.new( @version ),
         OpenSSL::ASN1::OctetString.new( @community ) ]
     end
-
 
     # http://www.tcpipguide.com/free/t_SNMPVersion2SNMPv2MessageFormats-5.htm#Table_219
     def check_error_status(status)
