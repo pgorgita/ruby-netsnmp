@@ -7,7 +7,7 @@ module NETSNMP
 
     # @param [Hash] opts the options set 
     def initialize(version: 1, community: "public", **options)
-      @version   = 1
+      @version   = version
       @community = community
       validate(options)
     end
