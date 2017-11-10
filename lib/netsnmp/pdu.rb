@@ -53,9 +53,29 @@ module NETSNMP
       end
     end
 
-    attr_reader :varbinds, :type
+    def to_der
+      to_asn.to_der
+    end
 
-    attr_reader :version, :community, :request_id
+    def to_asn
+      request_id_asn = OpenSSL::ASN1::Integer.new( @request_id )
+      error_asn = OpenSSL::ASN1::Integer.new( @error_status )
+      error_index_asn = OpenSSL::ASN1::Integer.new( @error_index )
+
+      varbind_asns = OpenSSL::ASN1::Sequence.new( @varbinds.map(&:to_asn) )
+
+      request_asn = OpenSSL::ASN1::ASN1Data.new( [request_id_asn,
+                                                  error_asn, error_index_asn,
+                                                  varbind_asns], @type,
+                                                  :CONTEXT_SPECIFIC )
+
+      OpenSSL::ASN1::Sequence.new( [ *encode_headers_asn, request_asn ] )
+    end
+
+    attr_reader :varbinds, :error, :version,
+                :type, :community, :request_id
+
+    private
 
     def initialize(type: , headers: , 
                            request_id: nil, 
@@ -65,17 +85,12 @@ module NETSNMP
       @version, @community = headers
       @version = @version.to_i
       @error_status = error_status
+      @error = check_error_status(error_status)
       @error_index  = error_index
       @type = type
       @varbinds = []
       add_varbinds(varbinds)
       @request_id = request_id || SecureRandom.random_number(MAXREQUESTID)
-      check_error_status(@error_status)
-    end
-
-
-    def to_der
-      to_asn.to_der
     end
 
     # Adds a request varbind to the pdu
@@ -114,30 +129,29 @@ module NETSNMP
 
     # http://www.tcpipguide.com/free/t_SNMPVersion2SNMPv2MessageFormats-5.htm#Table_219
     def check_error_status(status)
-      return if status == 0
-      message = case status
-        when 1 then "Response-PDU too big"
-        when 2 then "No such name"
-        when 3 then "Bad value"
-        when 4 then "Read Only"
-        when 5 then "General Error"
-        when 6 then "Access denied"
-        when 7 then "Wrong type"
-        when 8 then "Wrong length"
-        when 9 then "Wrong encoding"
-        when 10 then "Wrong value"
-        when 11 then "No creation"
-        when 12 then "Inconsistent value"
-        when 13 then "Resource unavailable"
-        when 14 then "Commit failed"
-        when 15 then "Undo Failed"
-        when 16 then "Authorization Error"
-        when 17 then "Not Writable"
-        when 18 then "Inconsistent Name"
+      return nil if status == 0
+      case status
+        when 1 then :response_pdu_too_big
+        when 2 then :no_such_name
+        when 3 then :bad_value
+        when 4 then :read_only
+        when 5 then :generic_error
+        when 6 then :access_denied
+        when 7 then :wrong_type
+        when 8 then :wrong_length
+        when 9 then :wrong_encoding
+        when 10 then :wrong_value
+        when 11 then :no_creation
+        when 12 then :inconsistent_value
+        when 13 then :resource_unavailable
+        when 14 then :commit_failed
+        when 15 then :undo_failed
+        when 16 then :authorization_error
+        when 17 then :not_writable
+        when 18 then :inconsistent_name
         else
-          "Unknown Error: (#{status})"
+          "unknown_pdu_error_#{status}".to_sym
       end
-      raise Error, message
     end
   end
 end
