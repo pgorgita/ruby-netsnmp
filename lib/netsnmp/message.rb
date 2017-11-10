@@ -19,6 +19,16 @@ module NETSNMP
     def decode(stream, security_parameters: )
       engine_id, engine_boots, engine_time, _, auth_param, priv_param, pdu_payload = map_stream(stream)
 
+      # error responses might come without AUTH
+      if auth_param == AUTHNONE.value
+        PDU.decode(pdu_payload)
+      else
+        ScopedPDU.decode(security_parameters.decode(pdu_payload,
+                                                    salt: priv_param,
+                                                    engine_boots: engine_boots,
+                                                    engine_time: engine_time))
+      end
+    end
 
     def map_stream(stream)
       asn_tree = OpenSSL::ASN1.decode(stream)
