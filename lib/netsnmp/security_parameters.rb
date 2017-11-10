@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module NETSNMP
-  # This module encapsulates the public API for encrypting/decrypting and signing/verifying.
+  # This module encapsulates the public API for encrypting/decrypting and signing.
   # 
   # It doesn't interact with other layers from the library, rather it is used and passed all 
   # the arguments (consisting mostly of primitive types).
@@ -101,16 +101,6 @@ module NETSNMP
       digest.reset
       digest << ( k2 + d1 )
       digest.digest[0,12]
-    end
-
-    # @param [String] stream the encoded incoming payload
-    # @param [String] salt the incoming payload''s salt
-    #
-    # @raise [NETSNMP::Error] if the message's integration has been violated 
-    def verify(stream, salt)
-      return if @security_level < 1
-      verisalt = sign(stream)
-      raise Error, "invalid message authentication salt" unless verisalt == salt
     end
 
     private

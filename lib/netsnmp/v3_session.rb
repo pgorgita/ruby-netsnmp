@@ -32,8 +32,7 @@ module NETSNMP
         # inspect public API
         unless s.respond_to?(:encode) &&
                s.respond_to?(:decode) &&
-               s.respond_to?(:sign)   &&
-               s.respond_to?(:verify)
+               s.respond_to?(:sign)
           raise Error, "#{s} doesn't respect the sec params public API (#encode, #decode, #sign)" 
         end 
       else
