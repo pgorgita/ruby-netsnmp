@@ -63,7 +63,8 @@ module NETSNMP
         salt_param
       ])
       message_flags = MSG_REPORTABLE | security_parameters.security_level
-      message_id    = OpenSSL::ASN1::Integer.new(SecureRandom.random_number(2147483647))
+      message_id    = OpenSSL::ASN1::Integer.new(SecureRandom.random_number(MAXREQUESTID))
+
       headers = OpenSSL::ASN1::Sequence.new([
         message_id, MSG_MAX_SIZE,
         OpenSSL::ASN1::OctetString.new( [String(message_flags)].pack("h*") ),
