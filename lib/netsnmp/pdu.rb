@@ -27,11 +27,7 @@ module NETSNMP
 
         request_id, error_status, error_index  = request_headers.map(&:value).map(&:to_i)
 
-        varbs = varbinds.value.map do |varbind|
-          oid_asn, val_asn  = varbind.value
-          oid = oid_asn.value
-          { oid: oid, value: val_asn }
-        end
+        varbs = varbinds.value.map{|vb| Hash[[:oid, :value].zip vb.value] }
 
         new(type: type, headers: [version, community],
                         error_status: error_status,
@@ -48,7 +44,7 @@ module NETSNMP
         typ = case type
           when :get       then 0
           when :getnext   then 1
-#          when :getbulk   then 5
+          #when :getbulk   then 5
           when :set       then 3
           when :response  then 2
           else raise Error, "#{type} is not supported as type"
@@ -72,9 +68,7 @@ module NETSNMP
       @error_index  = error_index
       @type = type
       @varbinds = []
-      varbinds.each do |varbind|
-        add_varbind(varbind)
-      end
+      add_varbinds(varbinds)
       @request_id = request_id || SecureRandom.random_number(MAXREQUESTID)
       check_error_status(@error_status)
     end
