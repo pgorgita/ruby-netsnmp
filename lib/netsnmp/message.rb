@@ -70,18 +70,25 @@ module NETSNMP
         MSG_SECURITY_MODEL
       ])
 
-      encoded = OpenSSL::ASN1::Sequence([ 
-        MSG_VERSION, 
+      encoded = pre_encode(headers, sec_params, scoped_pdu)
+
+      if (signature = security_parameters.sign(encoded))
+        sec_params.value[4] = OpenSSL::ASN1::OctetString.new(signature)
+        encoded = pre_encode(headers, sec_params, scoped_pdu)
+      end
+
+      encoded
+    end
+
+    private
+
+    def pre_encode(headers, sec_params, scoped_pdu)
+      OpenSSL::ASN1::Sequence([
+        MSG_VERSION,
         headers,
         OpenSSL::ASN1::OctetString.new(sec_params.to_der),
         scoped_pdu
       ]).to_der
-      signature = security_parameters.sign(encoded)
-      if signature
-        auth_salt = OpenSSL::ASN1::OctetString.new(signature)
-        encoded.sub!(AUTHNONE.to_der, auth_salt.to_der)
-      end
-      encoded
     end
 
   end
