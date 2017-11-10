@@ -3,7 +3,7 @@ module NETSNMP
   # Let's just remind that there is no session in snmp, this is just an abstraction. 
   # 
   class Session
-    TIMEOUT = 2
+    TIMEOUT = 5
 
     # @param [Hash] opts the options set 
     def initialize(version: 1, community: "public", **options)
