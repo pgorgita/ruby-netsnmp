@@ -28,19 +28,39 @@ module NETSNMP
       PDU.build(type, headers: [ @version, @community ], varbinds: vars)
     end
 
+    # buids and sends a pdu
+    #
+    def request(type, oid_opts)
+      req = build_pdu(type, oid_opts)
+      send(req)
+    end
+
+    private
     # send a pdu, receives a pdu
     #
     # @param [NETSNMP::PDU, #to_der] an encodable request pdu
     #
     # @return [NETSNMP::PDU] the response pdu
     #
-    def send(pdu)
-      encoded_request = encode(pdu) 
-      encoded_response = @transport.send(encoded_request)
-      decode(encoded_response)
+    def send(req)
+      response = ask(req)
+      # one retry to check if transport had an issue
+      response = re_ask(req) if response.error || req.request_id != response.request_id
+      raise Error, "request pdu:#{req.inspect}\nresponse pdu:#{response.inspect}" if req.request_id != response.request_id && response.request_id != 0
+
+      response
     end
 
-    private
+    def ask(req)
+      encoded = encode(req)
+      response = @transport.send(encoded)
+      decode(response)
+    end
+
+    def re_ask(req)
+      @transport.reconnect
+      ask(req)
+    end
 
     def validate(**options)
       proxy = options[:proxy]
@@ -76,10 +96,18 @@ module NETSNMP
       MAXPDUSIZE = 0xffff + 1
 
       def initialize(host, port, timeout: )
-        @socket = UDPSocket.new
-        @socket.connect( host, port )
+        @host = host
+        @port = port
         @timeout = timeout
+        connect
       end
+
+      def connect
+        close if @socket.respond_to?(:close)
+        @socket = UDPSocket.new
+        @socket.connect( @host, @port )
+      end
+      alias_method :reconnect, :connect
 
       def close 
         @socket.close
@@ -119,8 +147,9 @@ module NETSNMP
 
       def wait(mode)
         unless @socket.__send__(mode, @timeout)
-          raise Timeout::Error, "Timeout after #{@timeout} seconds"
-        end   
+          reconnect
+          raise Timeout::Error, "timeout after #{@timeout} seconds"
+        end
       end
 
     end
