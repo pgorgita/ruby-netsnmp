@@ -20,8 +20,16 @@ module NETSNMP
     attr_reader :oid, :value
 
     def initialize(oid , value: nil, type: nil, **opts)
-      @oid = OID.build(oid)
+      @oid_asn = case oid
+       when OpenSSL::ASN1::ObjectId then oid
+       else
+         oid = oid[1..-1] if oid.start_with?('.')
+         OpenSSL::ASN1::ObjectId.new(oid)
+      end
+      @oid = @oid_asn.oid
       type_tag_and_value(type, value)
+      rescue OpenSSL::ASN1::ASN1Error => e
+        raise Error, e.message
     end
 
     def to_s
@@ -33,19 +41,18 @@ module NETSNMP
     end
 
     def to_asn
-      asn_oid = OID.to_asn(@oid)
       asn_val = case @type
         when :timetick then @value.to_asn
         when :string, :symbol then OpenSSL::ASN1::OctetString.new(@value)
         when :integer then OpenSSL::ASN1::Integer.new(OpenSSL::BN.new(@value))
         when :boolean then OpenSSL::ASN1::Boolean.new(@value)
         when :nil then OpenSSL::ASN1::Null.new(nil)
-        when :oid then OID.to_asn(@value)
+        when :oid then OpenSSL::ASN1::ObjectId.new(@value)
         when :ipaddress then OpenSSL::ASN1::ASN1Data.new(@value.hton, @asn_tag, :APPLICATION)
         else
           OpenSSL::ASN1::ASN1Data.new(@value, @asn_tag, :APPLICATION)
       end
-      OpenSSL::ASN1::Sequence.new( [asn_oid, asn_val] )
+      OpenSSL::ASN1::Sequence.new( [@oid_asn, asn_val] )
     end
 
     private
@@ -110,7 +117,7 @@ module NETSNMP
         when OpenSSL::ASN1::Null
           [ asn_value, :nil ]
         when OpenSSL::ASN1::ObjectId
-         [ asn_value, :oid ]
+          [ @asn.oid, :oid ]
         else
           Kernel.puts @asn.inspect unless @asn.is_a?(OpenSSL::ASN1::ASN1Data)
           # OpenSSL::ASN1::ASN1Data and any other
@@ -169,6 +176,7 @@ module NETSNMP
         when "1.3.6.1.6.3.15.1.1.4.0" then "Unknown EngineIDs"
         when "1.3.6.1.6.3.15.1.1.5.0" then "Wrong Digests"
         when "1.3.6.1.6.3.15.1.1.6.0" then "Decryption Errors"
+        when "1.3.6.1.6.3.15.1.1.7.0" then "PDU Error"
         else
           return value
       end + "(##{value})"

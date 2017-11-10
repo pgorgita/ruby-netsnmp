@@ -63,7 +63,7 @@ module NETSNMP
       xet(oid_opts, :set, &block)
     end
 
-    # Perform a SNMP Walk (issues multiple subsequent GENEXT requests within the subtree rooted on an OID)
+    # Perform a SNMP Walk (issues multiple subsequent GENEXT requests within the oid subtree)
     #
     # @param [String] oid the root oid from the subtree
     #
@@ -81,7 +81,7 @@ module NETSNMP
           next if value_is_symbol
         end
         walkoid = next_get.keys.last
-        break if !OID.parent?(oid, walkoid) || value_is_symbol
+        break if !walkoid.match(%r/\A#{oid}\./) || value_is_symbol
         output.merge!(next_get)
       end
       output

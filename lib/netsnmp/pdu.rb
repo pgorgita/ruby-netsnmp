@@ -106,8 +106,8 @@ module NETSNMP
     alias_method :<<, :add_varbind
 
     def add_varbinds(varbinds)
-      ## adds varbind with pdu error if exists
-      @varbinds << Varbind.new([:pdu, :error], value: @error) if @error
+      ## injects varbind with pdu error if any
+      @varbinds << Varbind.new("1.3.6.1.6.3.15.1.1.7.0", value: @error) if @error
       varbinds.each{|v| add_varbind(v) }
     end
 
