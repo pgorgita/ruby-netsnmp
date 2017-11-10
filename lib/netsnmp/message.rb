@@ -17,25 +17,21 @@ module NETSNMP
     # @return [NETSNMP::ScopedPDU] the decoded PDU
     #
     def decode(stream, security_parameters: )
-      asn_tree = OpenSSL::ASN1.decode(stream)
-      version, headers, sec_params, pdu_payload = asn_tree.value
+      engine_id, engine_boots, engine_time, _, auth_param, priv_param, pdu_payload = map_stream(stream)
 
-      sec_params_asn = OpenSSL::ASN1.decode(sec_params.value).value
-
-      engine_id, engine_boots, engine_time, username, auth_param, priv_param = sec_params_asn.map(&:value)
 
     def map_stream(stream)
       asn_tree = OpenSSL::ASN1.decode(stream)
 
-      engine_boots=engine_boots.to_i
-      engine_time =engine_time.to_i
+      #version, headers, sec_params, pdu_payload
+      _, _, sec_params, pdu_payload = asn_tree.value
 
-      encoded_pdu = security_parameters.decode(pdu_payload, salt: priv_param,
-                                                            engine_boots: engine_boots,
-                                                            engine_time: engine_time)
-     
-      pdu = ScopedPDU.decode(encoded_pdu) 
-      [pdu, engine_id, engine_boots, engine_time]
+      sec_params_asn = OpenSSL::ASN1.decode(sec_params.value).value
+      sec_array = sec_params_asn.map(&:value)
+      sec_array[1] = sec_array[1].to_i #engine_boots
+      sec_array[2] = sec_array[2].to_i #engine_time
+      sec_array << pdu_payload
+      #[engine_id, engine_boots, engine_time, username, auth_param, priv_param, pdu_payload]
     end
 
     # @param [NETSNMP::ScopedPDU] the PDU to encode in the message
