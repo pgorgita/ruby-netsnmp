@@ -48,21 +48,26 @@ module NETSNMP
 
     def type_tag_and_value(type, value)
       value_class = value.class.name
-      @type, @asn_tag = case type
+      @type, @asn_tag, @value = case type
         when nil
           case value_class
             when /^OpenSSL::ASN1/
               @asn = value
               value, typ = value_per_asn1
-              [typ, @asn.tag]
+              [typ, @asn.tag, value]
             when *CLASS_TO_TYPE.keys
               typ = type_from_class(value_class)
-              [typ, tag_from_type(typ)]
+              [typ, tag_from_type(typ), value]
             else
               raise Error, "unsupported varbind value:#{value.inspect}"
           end
-        when *DATA_TYPES
-          [type, tag_from_type(type)]
+        when *TYPES
+          value = case type
+            when :ipaddress then IPAddr.new(value.to_s)
+            when :timetick then Timetick.new(value.to_i)
+            else value
+          end
+          [type, tag_from_type(type), value]
         else
           raise Error, "unsupported varbind type:#{type.inspect}"
       end
