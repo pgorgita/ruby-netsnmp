@@ -61,7 +61,6 @@ require "netsnmp/errors"
 
 require "netsnmp/timeticks"
 
-require "netsnmp/oid"
 require "netsnmp/varbind"
 require "netsnmp/pdu"
 require "netsnmp/session"
