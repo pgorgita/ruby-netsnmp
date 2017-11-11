@@ -17,7 +17,7 @@ module NETSNMP
                       "Symbol"=> 11, "NilClass"=>  12, "NETSNMP::Timetick"=> 3,
                       "OpenSSL::BN" => 9 }
 
-    attr_reader :oid, :value
+    attr_reader :oid, :value, :asn
 
     def initialize(oid , value: nil, type: nil, **opts)
       @oid_asn = case oid
@@ -41,18 +41,7 @@ module NETSNMP
     end
 
     def to_asn
-      asn_val = case @type
-        when :timetick then @value.to_asn
-        when :string, :symbol then OpenSSL::ASN1::OctetString.new(@value)
-        when :integer then OpenSSL::ASN1::Integer.new(OpenSSL::BN.new(@value))
-        when :boolean then OpenSSL::ASN1::Boolean.new(@value)
-        when :nil then OpenSSL::ASN1::Null.new(nil)
-        when :oid then OpenSSL::ASN1::ObjectId.new(@value)
-        when :ipaddress then OpenSSL::ASN1::ASN1Data.new(@value.hton, @asn_tag, :APPLICATION)
-        else
-          OpenSSL::ASN1::ASN1Data.new(@value, @asn_tag, :APPLICATION)
-      end
-      OpenSSL::ASN1::Sequence.new( [@oid_asn, asn_val] )
+      OpenSSL::ASN1::Sequence.new( [@oid_asn, @asn] )
     end
 
     private
@@ -77,13 +66,20 @@ module NETSNMP
         else
           raise Error, "unsupported varbind type:#{type.inspect}"
       end
+      build_asn
+    end
 
-      @value = if @type == :ipaddress && value_class != "IPAddr"
-        IPAddr.new(value.to_s)
-      elsif @type == :timetick && value_class != "NETSNMP::Timetick"
-        Timetick.new(value.to_i)
-      else
-        value
+    def build_asn
+      @asn ||= case @type
+        when :timetick then @value.to_asn
+        when :string, :symbol then OpenSSL::ASN1::OctetString.new(@value)
+        when :integer then OpenSSL::ASN1::Integer.new(@value.to_bn)
+        when :boolean then OpenSSL::ASN1::Boolean.new(@value)
+        when :nil then OpenSSL::ASN1::Null.new(nil)
+        when :oid then OpenSSL::ASN1::ObjectId.new(@value)
+        when :ipaddress then OpenSSL::ASN1::ASN1Data.new(@value.hton, @asn_tag, :APPLICATION)
+        else
+          OpenSSL::ASN1::ASN1Data.new(@value, @asn_tag, :APPLICATION)
       end
     end
 
