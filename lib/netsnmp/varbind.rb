@@ -172,7 +172,6 @@ module NETSNMP
         when "1.3.6.1.6.3.15.1.1.4.0" then "Unknown EngineIDs"
         when "1.3.6.1.6.3.15.1.1.5.0" then "Wrong Digests"
         when "1.3.6.1.6.3.15.1.1.6.0" then "Decryption Errors"
-        when "1.3.6.1.6.3.15.1.1.7.0" then "PDU Error"
         else
           return value
       end + "(##{value})"

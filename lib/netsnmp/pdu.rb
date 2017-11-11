@@ -106,9 +106,12 @@ module NETSNMP
     alias_method :<<, :add_varbind
 
     def add_varbinds(varbinds)
-      ## injects varbind with pdu error if any
-      @varbinds << Varbind.new("1.3.6.1.6.3.15.1.1.7.0", value: @error) if @error
-      varbinds.each{|v| add_varbind(v) }
+      if @error # injects varbind with pdu error
+        oid = varbinds.first || {oid: "0.0"}
+        @varbinds << Varbind.new(oid[:oid], value: @error)
+      else
+        varbinds.each{|v| add_varbind(v) }
+      end
     end
 
     def encode_headers_asn
