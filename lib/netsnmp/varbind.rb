@@ -8,7 +8,7 @@ module NETSNMP
     #Symbol needed for pdu errors: PDU#add_varbinds
     #
     # Array order is important as the index is the ASN tag for every data type
-    DATA_TYPES = [:ipaddress, :counter32, :gauge, :timetick, :opaque, :nsap,
+    TYPES = [:ipaddress, :counter32, :gauge, :timetick, :opaque, :nsap,
                   :counter64, :uinteger, :string, :integer, :boolean, :symbol,
                   :nil, :oid]
 
@@ -85,11 +85,10 @@ module NETSNMP
       else
         value
       end
-
     end
 
     def asn_types
-      DATA_TYPES[0..7]
+      TYPES[0..7]
     end
 
     def type_from_tag(tag)
@@ -101,8 +100,8 @@ module NETSNMP
       asn_types.find_index(type)
     end
 
-    def type_from_class(value_class)
-      DATA_TYPES[ CLASS_TO_TYPE[value_class] ]
+    def type_from_class(klass)
+      TYPES[ CLASS_TO_TYPE[klass] ]
     end
 
     def value_per_asn1
