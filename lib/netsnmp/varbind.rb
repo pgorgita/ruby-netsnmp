@@ -164,6 +164,7 @@ module NETSNMP
       hex.dump.include?("\\x") ? hex.unpack("H*")[0] : hex
     end
 
+    #usmStats error counter oids
     def oid_error_check(value)
       case @oid
         when "1.3.6.1.6.3.15.1.1.1.0" then "Unsupported Security Levels"
