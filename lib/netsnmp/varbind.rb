@@ -131,36 +131,32 @@ module NETSNMP
     def value_per_tag_class(asn_value)
       asn_tag = @asn.tag
       case tag_class = @asn.tag_class
-        when :CONTEXT_SPECIFIC
-          case asn_tag
-            when 0
-              :no_such_instance_0
-            when 1
-              :no_such_instance_1
-            when 2
-              :end_of_mib
-            else
-              "context_specific_#{asn_tag}".to_sym
-          end
         when :UNIVERSAL, :APPLICATION
-          Array(case asn_tag
-            when 0 # IP Address
-              IPAddr.new_ntoh(asn_value)
-            when 1, 2 # ASN counter 32(1), Gauge(2)
-              asn_value.unpack("B*")[0].to_i(2)
-            when 3 # timeticks
-              Timetick.new(asn_value.unpack("B*")[0].to_i(2) || 0)
-            when 4 # opaque
-              hex_string_decode(asn_value)
-            when 6 # ASN Counter 64
-              asn_value.unpack("H*")[0].to_i(16)
-            when 5, 7 # NSAP(5), SN UInteger(7)
-              asn_value
-            else
-              raise(Error, "unknown asn tag:#{@asn.inspect}}")
-          end) << type_from_tag(asn_tag)
+          Array(
+            case asn_tag
+              when 0 # IP Address
+                IPAddr.new_ntoh(asn_value)
+              when 1, 2 # ASN counter 32(1), Gauge(2)
+                asn_value.unpack("B*")[0].to_i(2)
+              when 3 # timeticks
+                Timetick.new(asn_value.unpack("B*")[0].to_i(2) || 0)
+              when 4 # opaque
+                hex_string_decode(asn_value)
+              when 6 # ASN Counter 64
+                asn_value.unpack("H*")[0].to_i(16)
+              else# NSAP(5), SN UInteger(7)...any other
+                asn_value
+              end
+          ) << type_from_tag(asn_tag)
         else
-          raise(Error, "unknown asn tag_class:#{@asn.inspect}}")
+          case [tag_class, asn_tag]
+            when [:CONTEXT_SPECIFIC, 0] then :no_such_instance_0
+            when [:CONTEXT_SPECIFIC, 1] then :no_such_instance_1
+            when [:CONTEXT_SPECIFIC, 2] then :end_of_mib
+            else
+              val = asn_value.to_s.split(/\W+/).join("_")
+              "#{tag_class.to_s.downcase}_#{asn_tag}_#{val}".to_sym
+          end
       end
     end
 
