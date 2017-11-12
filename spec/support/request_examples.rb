@@ -24,7 +24,7 @@ RSpec.shared_examples "an snmp client" do
   end
 
   describe "#get_next" do
-    let(:value) { subject.get_next(oid: get_oid) }
+    let(:value) { subject.get_next(oid: next_oid) }
     it "fetches the varbinds for the next oid" do
       expect(value).to eq(next_result)
     end

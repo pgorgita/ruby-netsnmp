@@ -14,12 +14,12 @@ RSpec.describe NETSNMP::Client do
         version: "1",
         community: "public"
       } }
-      let(:get_oid) { "1.3.6.1.2.1.1.5.0" }
+      let(:get_oid) { "1.3.6.1.6.3.10.2.1.1.0" }
       let(:multi_get_oid) { ["1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.7.0"] }
       let(:next_oid) { "1.3.6.1.2.1.1.5.0" }
       let(:walk_oid) { "1.3.6.1.2.1.1" }
       let(:set_oid) { "1.3.6.1.2.1.1.3.0" } # sysUpTimeInstance
-      let(:get_result) { {"1.3.6.1.2.1.1.5.0"=>"DEVICE-192.168.1.1"} }
+      let(:get_result) { {"1.3.6.1.6.3.10.2.1.1.0"=>:no_such_name} }
       let(:multi_get_result) { {"1.3.6.1.2.1.1.5.0"=>"DEVICE-192.168.1.1", "1.3.6.1.2.1.1.7.0"=>72} }
       let(:next_result) { {"1.3.6.1.2.1.1.6.0"=>"The Cloud"} }
       let(:walk_result) { {"1.3.6.1.2.1.1.1.0"=>"Device description",
@@ -39,12 +39,12 @@ RSpec.describe NETSNMP::Client do
         version: "2c",
         community: "public"
       } }
-      let(:get_oid) { "1.3.6.1.2.1.1.5.0" }
+      let(:get_oid) { "1.3.6.1.2.1.4.31.1.1.4.1" }
       let(:multi_get_oid) { ["1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.7.0"] }
       let(:next_oid) { "1.3.6.1.2.1.1.5.0" }
       let(:walk_oid) { "1.3.6.1.2.1.1" }
       let(:set_oid) { "1.3.6.1.2.1.1.3.0" }
-      let(:get_result) { {"1.3.6.1.2.1.1.5.0"=>"DEVICE-192.168.1.1"} }
+      let(:get_result) { {"1.3.6.1.2.1.4.31.1.1.4.1"=>:no_such_instance_1} }
       let(:multi_get_result) { {"1.3.6.1.2.1.1.5.0"=>"DEVICE-192.168.1.1", "1.3.6.1.2.1.1.7.0"=>72} }
       let(:next_result) { {"1.3.6.1.2.1.1.6.0"=>"The Cloud"} }
       let(:walk_result) { {"1.3.6.1.2.1.1.1.0"=>"Device description",
@@ -60,7 +60,6 @@ RSpec.describe NETSNMP::Client do
     end
   end
 
-
   describe "v3" do
     let(:extra_options) { {} }
     let(:version_options) { {
@@ -68,13 +67,16 @@ RSpec.describe NETSNMP::Client do
       context: "a172334d7d97871b72241397f713fa12",
     } }
     let(:get_oid) { "1.3.6.1.2.1.1.5.0" }
-    let(:multi_get_oid) { ["1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.9.1.3.1"] }
-    let(:next_oid) { "1.3.6.1.2.1.1.6.0" }
+    let(:multi_get_oid) { ["1.3.6.1.6.3.10.2.1.1.0", "1.3.6.1.2.1.4.31.1.1.4.1", "1.3.6.1.4.1.2021.10.1.6.3", "1.3.7.1.2.1.2.2.1.7.1"] }
+    let(:next_oid) { "1.3.6.1.7" }
     let(:set_oid) { "1.3.6.1.2.1.1.3.0" } # sysUpTimeInstance
     let(:walk_oid) { "1.3.6.1.2.1.1.9.1.3" }
     let(:get_result) { {"1.3.6.1.2.1.1.5.0"=>"tt"} }
-    let(:multi_get_result) { {"1.3.6.1.2.1.1.5.0"=>"tt", "1.3.6.1.2.1.1.9.1.3.1"=>"The SNMP Management Architecture MIB."} }
-    let(:next_result) { {"1.3.6.1.2.1.1.6.0"=>"KK12 (edit /etc/snmp/snmpd.conf)"} }
+    let(:multi_get_result) { {"1.3.6.1.2.1.4.31.1.1.4.1" => 22906399, 
+                              "1.3.6.1.6.3.10.2.1.1.0" => "80001f888092c37021529f4647",
+                              "1.3.6.1.4.1.2021.10.1.6.3" => "9f78043cf5c28f",
+                              "1.3.7.1.2.1.2.2.1.7.1" => :no_such_instance_1} }
+    let(:next_result) { {"1.3.6.1.7"=>:end_of_mib} }
     let(:walk_result) { { "1.3.6.1.2.1.1.9.1.3.1"=>"The SNMP Management Architecture MIB.",
                           "1.3.6.1.2.1.1.9.1.3.2"=>"The MIB for Message Processing and Dispatching.",
                           "1.3.6.1.2.1.1.9.1.3.3"=>"The management information definitions for the SNMP User-based Security Model.",
@@ -162,4 +164,25 @@ RSpec.describe NETSNMP::Client do
       end
     end
   end
+
+  describe "v3 timeout" do
+
+    let(:user_options) { { username: "authprivmd5des", auth_password: "maplesyrup",
+                           auth_protocol: :md5, priv_password: "maplesyrup",
+                           priv_protocol: :des } }
+    let(:version_options) { {
+      host: "localhost",
+      version: "3",
+      retries: 5,
+      context: "a172334d7d97871b72241397f713fa12",
+      timeout: 0.0001,
+    } }
+    let(:options) { device_options.merge(version_options.merge(user_options)) }
+    let(:client) { described_class.new(options) }
+    it "#get raises timeout error" do
+      expect { client.get("1.3.6") }.to raise_error(Timeout::Error, "timeout after 0.0001 seconds(#5 retries)")
+    end
+
+  end
+
 end

@@ -1,26 +1,27 @@
 RSpec.shared_examples "an ASN1 encoder/decoder" do |value, value_type, object, oid, varbind_der|
 
-  let(:from_object) { described_class.new(oid, value: object).to_der }
+  let(:from_object) { described_class.new(oid, value: object)}
   let(:asn_tree) { OpenSSL::ASN1.decode(varbind_der) }
-  let(:wrong_asn) { OpenSSL::ASN1.decode("0\a\x06\x03+\x06\x00H\x00".b) }
   let(:from_asn) { described_class.new(asn_tree.value.first, value: asn_tree.value.last).value }
-  let(:from_val_type) { described_class.new(oid, type: value_type, value: value).value }
+  let(:from_val_type) { described_class.new(oid, type: value_type, value: value) }
 
   context "from Object" do
-    it "#to_der matches varbind_der" do
-      expect(from_object).to eq(varbind_der)
-    end
-  end
-  context "from ASN" do
     it "#value matches object" do
-      expect(from_asn).to eq(object)
+      expect(from_object.value).to eq(from_asn)
+    end
+    it "#to_der matches varbind_der" do
+      expect(from_object.to_der).to eq(varbind_der)
     end
   end
   context "from value and type" do
     it "#value matches object" do
-      expect(from_val_type).to eq(object)
+      expect(from_val_type.value).to eq(from_asn)
+    end
+    it "#to_der matches varbind_der" do
+      expect(from_val_type.to_der).to eq(varbind_der)
     end
   end
+
   context "from object and unsupported type" do
     it "#raises error" do
       expect { described_class.new(oid, value: object, type: :fail) }.to raise_error(NETSNMP::Error, /unsupported varbind type:/)
@@ -31,25 +32,50 @@ RSpec.shared_examples "an ASN1 encoder/decoder" do |value, value_type, object, o
       expect { described_class.new(oid, value: Time.now) }.to raise_error(NETSNMP::Error, /unsupported varbind value:/)
     end
   end
-  context "from unsupported asn tag" do
-    it "#raises error" do
-      expect { described_class.new(wrong_asn.value.first, value: wrong_asn.value.last)}.to raise_error(NETSNMP::Error, /unknown asn tag:/)
-    end
-  end
+
 end
 
 RSpec.describe NETSNMP::Varbind do
 
-  subject { described_class.new(".1.3.6.1.0", value: "a") }
+  context "initialize with" do
+    it "#unsupported asn tag raises error" do
+      wrong_asn = OpenSSL::ASN1.decode("0\a\x06\x03+\x06\x00H\x00".b)
+      expect { described_class.new(wrong_asn.value.first, value: wrong_asn.value.last)}.to raise_error(NETSNMP::Error, "unsupported varbind tag:8")
+    end
+    it "#unsupported oid raises error" do
+      expect { described_class.new("0", value: nil)}.to raise_error(NETSNMP::Error, "invalid OBJECT ID: missing second number")
+    end
+    it "#unknown tag class is symbolysed" do
+      asn = OpenSSL::ASN1::ASN1Data.new("test", 99, :PRIVATE)
+      expect( described_class.new("1.3.6.88", value: asn).value ).to eq(:private_99_test)
+    end
+    it "#specific context tag class is symbolysed" do
+      asn = OpenSSL::ASN1::ASN1Data.new("", 0, :CONTEXT_SPECIFIC)
+      expect( described_class.new("1.3.6.89", value: asn).value ).to eq(:no_such_instance_0)
+    end
+  end
 
-  describe "#to_der" do
-    it { expect(subject.to_der).to eq("0\t\x06\x04+\x06\x01\x00\x04\x01a".b) }
+  describe "usmStats oids" do
+    let(:asn_counter) { OpenSSL::ASN1::ASN1Data.new("\xff".b, 6, :APPLICATION) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.1.0", value: asn_counter).value ).to eq("Unsupported Security Levels(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.2.0", value: asn_counter).value ).to eq("Not In Time Windows(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.3.0", value: asn_counter).value ).to eq("Unknown User Names(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.4.0", value: asn_counter).value ).to eq("Unknown EngineIDs(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.5.0", value: asn_counter).value ).to eq("Wrong Digests(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.6.0", value: asn_counter).value ).to eq("Decryption Errors(#255)") }
   end
-  describe "#to_s" do
-    it { expect(subject.to_s).to end_with(" @oid=1.3.6.1.0 @value=a>") }
+
+  subject { described_class.new(".1.3.6.1.0", value: "1.3.6", type: :oid) }
+
+  describe "oid #to_der" do
+    it { expect(subject.to_der).to eq("0\n\x06\x04+\x06\x01\x00\x06\x02+\x06".b) }
   end
-  describe "#to_asn" do
-    it { expect(subject.to_asn.to_der).to eq("0\t\x06\x04+\x06\x01\x00\x04\x01a".b) }
+  describe "oid #to_s" do
+    it { expect(subject.to_s).to end_with(" @oid=1.3.6.1.0 @value=1.3.6>") }
+  end
+
+  describe "opaque #to_der" do
+    it { expect(described_class.new(".1.3.6.1.4.0", value: "test", type: :opaque).to_der).to eq("0\r\x06\x05+\x06\x01\x04\x00D\x04test".b) }
   end
 
   describe "initialized with ipaddress" do
@@ -107,16 +133,6 @@ RSpec.describe NETSNMP::Varbind do
 
   end
 
-  describe "initialized with oid" do
-    include_examples "an ASN1 encoder/decoder",
-                     "1.3.6",
-                     :oid,
-                     "1.3.6",
-                     ".1.3.6.1.4.1.2011.6.3.0",
-                     "0\x13\x06\n+\x06\x01\x04\x01\x8F[\x06\x03\x00\x04\x051.3.6".b
-
-  end
-
   describe "initialized with nil" do
     include_examples "an ASN1 encoder/decoder",
                      nil,
@@ -138,3 +154,4 @@ RSpec.describe NETSNMP::Varbind do
   end
 
 end
+
