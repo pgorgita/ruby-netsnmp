@@ -129,7 +129,7 @@ module NETSNMP
       begin
         yield
       rescue Timeout::Error => e
-        raise e unless retries > 0
+        raise(Timeout::Error, "#{e.message}(##{@retries} retries)") unless retries > 0
         retries -= 1
         retry
       end
