@@ -88,14 +88,14 @@ module NETSNMP
       # don't sign unless you have to
       return nil if not @auth_protocol
 
-      key = auth_key.dup
+      key = auth_key.dup.b
 
-      key << "\x00" * (@auth_protocol == :md5 ? 48 : 44)
-      k1 = key.xor(IPAD)
-      k2 = key.xor(OPAD)
+      key << ("\x00" * (@auth_protocol == :md5 ? 48 : 44)).b
+      k1 = key.xor(IPAD).b
+      k2 = key.xor(OPAD).b
 
       digest.reset
-      digest << ( k1 + message )
+      digest << ( k1 + message.b )
       d1 = digest.digest
 
       digest.reset
