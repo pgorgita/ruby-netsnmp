@@ -178,9 +178,8 @@ RSpec.describe NETSNMP::Client do
       timeout: 0.0001,
     } }
     let(:options) { device_options.merge(version_options.merge(user_options)) }
-    let(:client) { described_class.new(options) }
     it "#get raises timeout error" do
-      expect { client.get("1.3.6") }.to raise_error(Timeout::Error, "timeout after 0.0001 seconds(#5 retries)")
+      expect { described_class.new(options){|client| client.get("1.3.6") }}.to raise_error(Timeout::Error, "timeout after 0.0001 seconds(#5 retries)")
     end
 
   end
