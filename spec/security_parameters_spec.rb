@@ -36,5 +36,16 @@ RSpec.describe NETSNMP::SecurityParameters do
       expect(sha_sec.send(:priv_key)).to eq("\x66\x95\xfe\xbc\x92\x88\xe3\x62\x82\x23\x5f\xc7\x15\x1f\x12\x84\x97\xb3\x8f\x3f".b)
     end
   end
-
+  context "#initialize" do
+    it "wrong security level raises error" do
+      expect { described_class.new( security_level: :fake, auth_protocol: :md5, priv_protocol: :des,
+                                    username: "username", auth_password: password, priv_password: password,
+                                    engine_id: engine_id ) }.to raise_error(NETSNMP::Error, "security level not supported: fake")
+    end
+    it "wrong auth protocol raises error" do
+      expect { described_class.new( security_level: :auth_priv, auth_protocol: :fake, priv_protocol: :des,
+                                    username: "username", auth_password: password, priv_password: password,
+                                    engine_id: engine_id ) }.to raise_error(NETSNMP::Error, "unsupported auth protocol: fake")
+    end
+  end
 end

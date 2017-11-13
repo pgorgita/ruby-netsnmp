@@ -18,6 +18,7 @@ RSpec.describe NETSNMP::PDU do
       expect { described_class.build(:ups, headers: [0, "public"])}.to raise_error(NETSNMP::Error, "ups is not supported as type")
     end
     it "checks error codes" do
+      expect{ described_class.decode( 1 ) }.to raise_error(NETSNMP::Error, "1: unexpected data")
       expect( described_class.build(:response, headers: [0, ""], error_status: 1 ).varbinds[0].value ).to be(:response_pdu_too_big)
       expect( described_class.build(:response, headers: [0, ""], error_status: 2 ).varbinds[0].value ).to be(:no_such_name)
       expect( described_class.build(:response, headers: [0, ""], error_status: 3 ).varbinds[0].value ).to be(:bad_value)
@@ -35,6 +36,7 @@ RSpec.describe NETSNMP::PDU do
       expect( described_class.build(:response, headers: [0, ""], error_status: 15 ).varbinds[0].value ).to be(:undo_failed)
       expect( described_class.build(:response, headers: [0, ""], error_status: 16 ).varbinds[0].value ).to be(:authorization_error)
       expect( described_class.build(:response, headers: [0, ""], error_status: 17 ).varbinds[0].value ).to be(:not_writable)
+      expect( described_class.build(:response, headers: [0, ""], error_status: 18 ).varbinds[0].value ).to be(:inconsistent_name)
       expect( described_class.build(:response, headers: [0, ""], error_status: "bla" ).varbinds[0].value ).to be(:unknown_pdu_error_bla)
     end
   end
