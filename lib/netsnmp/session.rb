@@ -9,6 +9,7 @@ module NETSNMP
     def initialize(version: 1, community: "public", **options)
       @version   = version
       @community = community
+      @timeout = options.fetch(:timeout, TIMEOUT)
       validate(options)
     end
 
@@ -43,23 +44,13 @@ module NETSNMP
     # @return [NETSNMP::PDU] the response pdu
     #
     def send(req)
-      response = ask(req)
-      # one retry to check if transport had an issue
-      response = re_ask(req) if response.error || req.request_id != response.request_id
-      raise Error, "request pdu:#{req.inspect}\nresponse pdu:#{response.inspect}" if req.request_id != response.request_id && response.request_id != 0
+      encoded = encode(req)
+      encoded_response = @transport.send(encoded)
+      response = decode(encoded_response)
+
+      raise Error, "response pdu:#{response.inspect}" unless response.request_id == 0 || req.request_id == response.request_id
 
       response
-    end
-
-    def ask(req)
-      encoded = encode(req)
-      response = @transport.send(encoded)
-      decode(response)
-    end
-
-    def re_ask(req)
-      @transport.reconnect
-      ask(req)
     end
 
     def validate(**options)
@@ -71,7 +62,7 @@ module NETSNMP
         host, port = options.values_at(:host, :port)
         raise Error, "you must provide an hostname/ip under :host" unless host
         port ||= 161 # default snmp port
-        @transport = Transport.new(host, port.to_i, timeout: options.fetch(:timeout, TIMEOUT))
+        @transport = Transport.new(host, port.to_i, timeout: @timeout)
       end
       @version = case @version
         when Integer then @version # assume the use know what he's doing
