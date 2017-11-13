@@ -53,13 +53,14 @@ module NETSNMP
       engine_id, @engine_boots, engine_time, *_ = Message.map_stream(encoded_response_pdu)
       @security_parameters.engine_id = engine_id
       # sets the interval between sytem tyme and engine_time
-      @engine_time_gap = Time.now.to_i - engine_time
+      # takes timeout plus 2 seconds in account
+      @engine_time_gap = (Time.now.to_i - (engine_time + @timeout + 2))
     end
 
-    def encode(pdu)
+    def encode(pdu, engine_time = (Time.now.to_i - @engine_time_gap))
       Message.encode(pdu, security_parameters: @security_parameters, 
                           engine_boots: @engine_boots,
-                          engine_time: (Time.now.to_i - @engine_time_gap))
+                          engine_time: engine_time)
     end
 
     def decode(stream, security_parameters: @security_parameters)
