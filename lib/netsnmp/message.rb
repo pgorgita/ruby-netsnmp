@@ -4,7 +4,7 @@ module NETSNMP
   module Message
     extend self
 
-    AUTHNONE           = OpenSSL::ASN1::OctetString.new("\x00" * 12)
+    AUTHNONE           = OpenSSL::ASN1::OctetString.new(("\x00" * 12).b)
     PRIVNONE           = OpenSSL::ASN1::OctetString.new("")
     MSG_MAX_SIZE       = OpenSSL::ASN1::Integer.new(65507)
     MSG_SECURITY_MODEL = OpenSSL::ASN1::Integer.new(3)           # usmSecurityModel
@@ -74,6 +74,14 @@ module NETSNMP
       encoded = pre_encode(headers, sec_params, scoped_pdu)
 
       if (signature = security_parameters.sign(encoded))
+        #unless signature == (sig_2 = security_parameters.sign(encoded))
+          #sig_3 = security_parameters.sign(encoded)
+          #signature = case sig_3
+            #when sig_2 then sig_2
+            #when signature then signature
+            #else security_parameters.sign(encoded)
+          #end
+        #end
         sec_params.value[4] = OpenSSL::ASN1::OctetString.new(signature)
         encoded = pre_encode(headers, sec_params, scoped_pdu)
       end
@@ -89,7 +97,7 @@ module NETSNMP
         headers,
         OpenSSL::ASN1::OctetString.new(sec_params.to_der),
         scoped_pdu
-      ]).to_der
+      ]).to_der.b
     end
 
   end
