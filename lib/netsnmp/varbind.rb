@@ -125,7 +125,7 @@ module NETSNMP
           # already returns [value , type_symbol]
           value_per_tag_class(asn_value)
       end
-      [oid_error_check(value), type]
+      oid_error_check(value, type)
     end
 
     def value_per_tag_class(asn_value)
@@ -165,17 +165,17 @@ module NETSNMP
     end
 
     #usmStats error counter oids
-    def oid_error_check(value)
-      case @oid
-        when "1.3.6.1.6.3.15.1.1.1.0" then "Unsupported Security Levels"
-        when "1.3.6.1.6.3.15.1.1.2.0" then "Not In Time Windows"
-        when "1.3.6.1.6.3.15.1.1.3.0" then "Unknown User Names"
-        when "1.3.6.1.6.3.15.1.1.4.0" then "Unknown EngineIDs"
-        when "1.3.6.1.6.3.15.1.1.5.0" then "Wrong Digests"
-        when "1.3.6.1.6.3.15.1.1.6.0" then "Decryption Errors"
-        else
-          return value
-      end + "(##{value})"
+    def oid_error_check(value, type)
+      error = case @oid
+        when "1.3.6.1.6.3.15.1.1.1.0" then "unsupported_security_levels"
+        when "1.3.6.1.6.3.15.1.1.2.0" then "not_in_time_windows"
+        when "1.3.6.1.6.3.15.1.1.3.0" then "unknown_user_names"
+        when "1.3.6.1.6.3.15.1.1.4.0" then "unknown_engineid"
+        when "1.3.6.1.6.3.15.1.1.5.0" then "wrong_digests"
+        when "1.3.6.1.6.3.15.1.1.6.0" then "decryption_errors"
+        else return [ value, type ]
+      end
+      ["#{error}_#{value}".to_sym, :symbol]
     end
 
   end
