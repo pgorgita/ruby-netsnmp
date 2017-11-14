@@ -45,6 +45,7 @@ module NETSNMP
       check_parameters
       @auth_pass_key = passkey(@auth_password) unless @auth_password.nil?
       @priv_pass_key = passkey(@priv_password) unless @priv_password.nil?
+      @digest = nil
     end
 
 
