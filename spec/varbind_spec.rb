@@ -57,12 +57,12 @@ RSpec.describe NETSNMP::Varbind do
 
   describe "usmStats oids" do
     let(:asn_counter) { OpenSSL::ASN1::ASN1Data.new("\xff".b, 6, :APPLICATION) }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.1.0", value: asn_counter).value ).to eq("Unsupported Security Levels(#255)") }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.2.0", value: asn_counter).value ).to eq("Not In Time Windows(#255)") }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.3.0", value: asn_counter).value ).to eq("Unknown User Names(#255)") }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.4.0", value: asn_counter).value ).to eq("Unknown EngineIDs(#255)") }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.5.0", value: asn_counter).value ).to eq("Wrong Digests(#255)") }
-    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.6.0", value: asn_counter).value ).to eq("Decryption Errors(#255)") }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.1.0", value: asn_counter).value ).to eq(:unsupported_security_levels_255) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.2.0", value: asn_counter).value ).to eq(:not_in_time_windows_255) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.3.0", value: asn_counter).value ).to eq(:unknown_user_names_255) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.4.0", value: asn_counter).value ).to eq(:unknown_engineid_255) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.5.0", value: asn_counter).value ).to eq(:wrong_digests_255) }
+    it { expect( described_class.new("1.3.6.1.6.3.15.1.1.6.0", value: asn_counter).value ).to eq(:decryption_errors_255) }
   end
 
   subject { described_class.new(".1.3.6.1.0", value: "1.3.6", type: :oid) }
