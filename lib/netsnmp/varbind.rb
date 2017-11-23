@@ -7,7 +7,7 @@ module NETSNMP
 
     #Symbol needed for pdu errors: PDU#add_varbinds
     #
-    # Array order is important as the index is the ASN tag for every data type
+    # Array order is important as the index is the ASN tag
     TYPES = [:ipaddress, :counter32, :gauge, :timetick, :opaque, :nsap,
                   :counter64, :uinteger, :string, :integer, :boolean, :symbol,
                   :nil, :oid]
@@ -16,6 +16,11 @@ module NETSNMP
                       "IPAddr"=> 0, "TrueClass"=> 10, "FalseClass"=> 10,
                       "Symbol"=> 11, "NilClass"=>  12, "NETSNMP::Timetick"=> 3,
                       "OpenSSL::BN" => 9 }
+
+    # check #hex_string_decode
+    PRINTABLE = (32..126).to_a
+    $HEXSTRING_HEX_OIDS = []
+    $HEXSTRING_STR_OIDS = []
 
     attr_reader :oid, :value, :asn
 
@@ -160,8 +165,62 @@ module NETSNMP
       end
     end
 
-    def hex_string_decode(hex)
-      hex.dump.include?("\\x") ? hex.unpack("H*")[0] : hex
+    #
+    # Opaque: https://tools.ietf.org/html/rfc2578#section-7.1.9
+
+    # '(...)Opaque type supports the capability to pass arbitrary ASN.1
+    #  syntax (...) encoded as an OCTET STRING, in effect "double-wrapping"
+    #  the original ASN.1 value(...)'
+    #
+    # given this, in order to unwrap correctly the value it is needed to know
+    # if the value is already ASCII or if it needs hex unpacking from the oid
+    # specification on the MIB.
+    #
+    # Provide oids to $HEXSTRING_HEX_OIDS and to $HEXSTRING_STR_OIDS force the decison
+    # Use regex if needed for indexes:
+    # $HEXSTRING_HEX_OIDS << /^1.3.6.1.4.1.2011.5.117.1.2.1.1.\d+$/
+    # $HEXSTRING_STR_OIDS << /^1.3.6.1.2.1.47.1.1.1.1.8.\d+$/
+    #
+    # If oid is not found on these global vars the value will be "guessed".
+    # It has a very high success rate, but there are always exceptions
+    # For precision please add always your known oids into the global
+    #
+    def hex_string_decode(value)
+      return value if value == ""
+      case @oid
+        when *$HEXSTRING_HEX_OIDS then unpack_hex(value)
+        when *$HEXSTRING_STR_OIDS then printable(value)
+        else #lets attempt an educated guess
+          if !unprintable_bytes(value).empty? || empty_print(value)
+            unpack_hex(value)
+          else
+            printable(value)
+          end
+      end
+    end
+
+    def unpack_hex(value)
+      @unpack_hex ||= value.unpack("H*")[0]
+    end
+
+    def value_bytes(value)
+      @value_bytes ||= value.bytes
+    end
+
+    def printable_bytes(value)
+      @printable_bytes ||= value_bytes(value).select{|b| PRINTABLE.include?(b) }
+    end
+
+    def unprintable_bytes(value)
+      @unprintable_bytes ||= value_bytes(value).reject{|b| PRINTABLE.include?(b) }
+    end
+
+    def printable(value)
+      @printable ||= printable_bytes(value).pack('c*').strip
+    end
+
+    def empty_print(value)
+      printable_bytes(value).reject{|b| [0, 32].include?(b) }.empty?
     end
 
     #usmStats error counter oids
