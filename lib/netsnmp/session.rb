@@ -32,8 +32,8 @@ module NETSNMP
     # buids and sends a pdu
     #
     def request(type, oid_opts)
-      req = build_pdu(type, oid_opts)
-      send(req)
+      req_pdu = build_pdu(type, oid_opts)
+      send(req_pdu)
     end
 
     private
@@ -43,14 +43,27 @@ module NETSNMP
     #
     # @return [NETSNMP::PDU] the response pdu
     #
-    def send(req)
-      encoded = encode(req)
+    def send(req_pdu)
+      resp_pdu = encode_send_decode(req_pdu)
+
+      # if by any reason the request is aborted at the transport's socket#send
+      # the response pdu will hang and cause a gap between request and response
+      # transport#reconnect should fix this
+      unless resp_pdu.request_id == 0 || req_pdu.request_id == resp_pdu.request_id
+        @transport.reconnect
+        resp_pdu = encode_send_decode(req_pdu)
+      end
+      unless resp_pdu.request_id == 0 || req_pdu.request_id == resp_pdu.request_id
+        # transport reconnect didn't fix the gap!
+        raise Error, "response id(#{resp_pdu.request_id}) not matching request id:#{req_pdu.request_id}"
+      end
+      resp_pdu
+    end
+
+    def encode_send_decode(req_pdu)
+      encoded = encode(req_pdu)
       encoded_response = @transport.send(encoded)
-      response = decode(encoded_response)
-
-      raise Error, "response pdu:#{response.inspect}" unless response.request_id == 0 || req.request_id == response.request_id
-
-      response
+      decode(encoded_response)
     end
 
     def validate(**options)
