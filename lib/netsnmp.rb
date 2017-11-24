@@ -41,7 +41,7 @@ module NETSNMP
   end
 
   def self.debug(&blk)
-    @debug_output << blk.call + "\n" if @debug_output
+    @debug_output << blk.call + "\n" if defined?(@debug_output) && @debug_output
   end
 
   unless defined?(Hexdump) # support the hexdump gem

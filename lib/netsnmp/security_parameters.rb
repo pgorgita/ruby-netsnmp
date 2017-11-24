@@ -38,8 +38,8 @@ module NETSNMP
       @security_level = security_level
       @username = username
       @engine_id = engine_id
-      @auth_protocol = auth_protocol.to_sym unless auth_protocol.nil?
-      @priv_protocol = priv_protocol.to_sym unless priv_protocol.nil?
+      @auth_protocol = !auth_protocol.nil? && auth_protocol.to_sym || nil
+      @priv_protocol = !priv_protocol.nil? && priv_protocol.to_sym || nil
       @auth_password = auth_password
       @priv_password = priv_password
       check_parameters
